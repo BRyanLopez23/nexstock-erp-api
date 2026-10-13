@@ -1,0 +1,668 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema de Gestión de Inventario & Lotes | Django + Vue.js API REST</title>
+    <!-- Vue.js 3 CDN -->
+    <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+
+        :root {
+            --bg: #f1f5f9;
+            --surface: #ffffff;
+            --navy: #0b192c;
+            --primary: #0284c7;
+            --primary-dark: #0369a1;
+            --text: #1e293b;
+            --muted: #64748b;
+            --border: #e2e8f0;
+            --success: #16a34a;
+            --warning: #d97706;
+            --danger: #dc2626;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            line-height: 1.5;
+        }
+
+        /* Navbar Superior */
+        .navbar {
+            background: var(--navy);
+            color: white;
+            padding: 14px 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 12px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .brand-logo {
+            background: var(--primary);
+            width: 36px;
+            height: 36px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 800;
+            font-size: 18px;
+        }
+
+        .brand-title {
+            font-size: 16px;
+            font-weight: 700;
+        }
+
+        .brand-sub {
+            font-size: 11.5px;
+            color: #94a3b8;
+        }
+
+        .user-bar {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 13px;
+        }
+
+        /* Contenedor Principal Responsivo */
+        .container {
+            max-width: 1240px;
+            margin: 24px auto;
+            padding: 0 16px;
+        }
+
+        /* Tarjetas KPI */
+        .kpi-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+
+        .kpi-card {
+            background: var(--surface);
+            border-radius: 12px;
+            padding: 18px 20px;
+            border: 1px solid var(--border);
+            box-shadow: 0 2px 6px rgba(15, 23, 42, 0.04);
+        }
+
+        .kpi-label {
+            font-size: 12px;
+            font-weight: 700;
+            text-transform: uppercase;
+            color: var(--muted);
+            letter-spacing: 0.5px;
+        }
+
+        .kpi-value {
+            font-size: 26px;
+            font-weight: 800;
+            color: var(--navy);
+            margin-top: 6px;
+        }
+
+        .kpi-value.alert {
+            color: var(--danger);
+        }
+
+        /* Layout de 2 columnas (Formulario + Tabla) */
+        .workspace-grid {
+            display: grid;
+            grid-template-columns: 350px 1fr;
+            gap: 20px;
+            align-items: start;
+        }
+
+        @media (max-width: 960px) {
+            .workspace-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .card {
+            background: var(--surface);
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            padding: 20px;
+            box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04);
+        }
+
+        .card-title {
+            font-size: 15px;
+            font-weight: 700;
+            color: var(--navy);
+            margin-bottom: 14px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        /* Formularios */
+        .form-group {
+            margin-bottom: 12px;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 12px;
+            font-weight: 600;
+            margin-bottom: 4px;
+            color: var(--text);
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 9px 11px;
+            border: 1px solid #cbd5e1;
+            border-radius: 7px;
+            font-size: 13px;
+            font-family: inherit;
+            transition: border-color 0.15s;
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+
+        /* Botones */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            padding: 9px 15px;
+            border-radius: 7px;
+            font-size: 13px;
+            font-weight: 600;
+            border: none;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+
+        .btn-primary {
+            background: var(--primary);
+            color: white;
+            width: 100%;
+        }
+
+        .btn-primary:hover {
+            background: var(--primary-dark);
+        }
+
+        .btn-outline {
+            background: transparent;
+            border: 1px solid #cbd5e1;
+            color: var(--text);
+        }
+
+        .btn-sm {
+            padding: 5px 10px;
+            font-size: 11.5px;
+        }
+
+        .btn-danger {
+            background: #fee2e2;
+            color: var(--danger);
+        }
+
+        /* Barra de filtros */
+        .filter-bar {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 16px;
+        }
+
+        .filter-bar .form-control {
+            flex: 1;
+            min-width: 170px;
+        }
+
+        /* Tabla Responsiva */
+        .table-responsive {
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 12.5px;
+        }
+
+        th, td {
+            padding: 11px 12px;
+            text-align: left;
+            border-bottom: 1px solid var(--border);
+        }
+
+        th {
+            background: #f8fafc;
+            font-weight: 700;
+            color: var(--muted);
+            text-transform: uppercase;
+            font-size: 11px;
+            letter-spacing: 0.4px;
+        }
+
+        tr:hover {
+            background-color: #f8fafc;
+        }
+
+        /* Badges de estado */
+        .badge {
+            padding: 3px 8px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 700;
+            display: inline-block;
+        }
+
+        .badge-DISPONIBLE {
+            background: #dcfce7;
+            color: #15803d;
+        }
+
+        .badge-EN_PROCESO {
+            background: #fef3c7;
+            color: #b45309;
+        }
+
+        .badge-DESPACHADO {
+            background: #e2e8f0;
+            color: #475569;
+        }
+
+        .stock-warning {
+            color: var(--danger);
+            font-weight: 700;
+            font-size: 11px;
+            display: block;
+        }
+
+        .alert-banner {
+            padding: 10px 14px;
+            border-radius: 8px;
+            margin-bottom: 14px;
+            font-size: 12.5px;
+            font-weight: 600;
+        }
+
+        .alert-error {
+            background: #fee2e2;
+            color: #b91c1c;
+        }
+
+        .alert-success {
+            background: #dcfce7;
+            color: #15803d;
+        }
+    </style>
+</head>
+<body>
+{% verbatim %}
+<div id="app">
+    <nav class="navbar">
+        <div class="brand">
+            <div class="brand-logo">N</div>
+            <div>
+                <div class="brand-title">NexStock ERP &bull; Cloud Inventory &amp; Asset Management</div>
+                <div class="brand-sub">Full Stack REST API Architecture &bull; Python (Django) + JavaScript (Vue.js 3) + SQL</div>
+            </div>
+        </div>
+        <div class="user-bar">
+            <span v-if="usuarioAutenticado">🟢 Sesión activa: <strong>{{ usuarioActual }}</strong></span>
+            <button v-if="!usuarioAutenticado" class="btn btn-sm btn-primary" style="width:auto;" @click="loginDemo">
+                🔐 Iniciar Sesión Demo
+            </button>
+            <button v-else class="btn btn-sm btn-outline" style="color:white;border-color:#475569;" @click="cerrarSesion">
+                Salir
+            </button>
+        </div>
+    </nav>
+
+    <div class="container">
+        <!-- Indicadores KPI -->
+        <div class="kpi-grid">
+            <div class="kpi-card">
+                <div class="kpi-label">Total Lotes Registrados</div>
+                <div class="kpi-value">{{ kpis.total_lotes }}</div>
+            </div>
+            <div class="kpi-card">
+                <div class="kpi-label">Volumen Total en Stock (Kg)</div>
+                <div class="kpi-value">{{ formatNumber(kpis.total_kg) }} kg</div>
+            </div>
+            <div class="kpi-card">
+                <div class="kpi-label">Valorización de Inventario</div>
+                <div class="kpi-value">${{ formatNumber(kpis.valor_inventario_usd) }}</div>
+            </div>
+            <div class="kpi-card">
+                <div class="kpi-label">Alertas de Stock Crítico</div>
+                <div class="kpi-value" :class="{ alert: kpis.alertas_stock_bajo > 0 }">
+                    {{ kpis.alertas_stock_bajo }} lotes
+                </div>
+            </div>
+        </div>
+
+        <div class="workspace-grid">
+            <!-- Panel Izquierdo: Formulario CRUD -->
+            <div class="card">
+                <div class="card-title">
+                    <span>{{ editandoId ? '✏️ Editar Lote' : '➕ Registrar Nuevo Lote' }}</span>
+                    <button v-if="editandoId" class="btn btn-sm btn-outline" @click="limpiarFormulario">Cancelar</button>
+                </div>
+
+                <div v-if="mensajeAlerta" class="alert-banner" :class="tipoAlerta === 'error' ? 'alert-error' : 'alert-success'">
+                    {{ mensajeAlerta }}
+                </div>
+
+                <form @submit.prevent="guardarLote">
+                    <div class="form-group">
+                        <label>Código de Lote *</label>
+                        <input type="text" class="form-control" v-model="form.codigo_lote" placeholder="Ej: LOT-2026-005" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Producto / Descripción *</label>
+                        <input type="text" class="form-control" v-model="form.nombre_producto" placeholder="Ej: Camarón Entero IQF 20/30" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Categoría *</label>
+                        <select class="form-control" v-model="form.categoria_id" required>
+                            <option value="" disabled>Seleccione una categoría</option>
+                            <option v-for="cat in categorias" :key="cat.id" :value="cat.id">{{ cat.nombre }}</option>
+                        </select>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Cantidad (Kg) *</label>
+                            <input type="number" step="0.01" class="form-control" v-model="form.cantidad_kg" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Stock Mínimo (Kg)</label>
+                            <input type="number" step="0.01" class="form-control" v-model="form.stock_minimo_kg" required>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Costo Unit. ($/Kg) *</label>
+                            <input type="number" step="0.01" class="form-control" v-model="form.costo_unitario_usd" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Estado</label>
+                            <select class="form-control" v-model="form.estado">
+                                <option value="DISPONIBLE">Disponible</option>
+                                <option value="EN_PROCESO">En Proceso</option>
+                                <option value="DESPACHADO">Despachado</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Ubicación en Planta / Bodega</label>
+                        <input type="text" class="form-control" v-model="form.ubicacion_bodega" placeholder="Ej: Cámara Frigorífica A1">
+                    </div>
+
+                    <button type="submit" class="btn btn-primary">
+                        {{ editandoId ? '💾 Actualizar Lote via API PUT' : '🚀 Guardar Lote via API POST' }}
+                    </button>
+                </form>
+            </div>
+
+            <!-- Panel Derecho: Listado y Filtros Dinámicos -->
+            <div class="card">
+                <div class="card-title">
+                    <span>📦 Lotes en Inventario (Consumo API REST JSON)</span>
+                    <span style="font-size:12px;color:var(--muted);">{{ lotes.length }} registros</span>
+                </div>
+
+                <div class="filter-bar">
+                    <input
+                        type="text"
+                        class="form-control"
+                        v-model="filtros.q"
+                        @input="cargarLotes"
+                        placeholder="🔍 Buscar por código, producto o bodega..."
+                    >
+                    <select class="form-control" v-model="filtros.categoria_id" @change="cargarLotes">
+                        <option value="">Todas las categorías</option>
+                        <option v-for="cat in categorias" :key="cat.id" :value="cat.id">{{ cat.nombre }}</option>
+                    </select>
+                    <select class="form-control" v-model="filtros.estado" @change="cargarLotes">
+                        <option value="">Todos los estados</option>
+                        <option value="DISPONIBLE">Disponible</option>
+                        <option value="EN_PROCESO">En Proceso</option>
+                        <option value="DESPACHADO">Despachado</option>
+                    </select>
+                </div>
+
+                <div class="table-responsive">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Código</th>
+                                <th>Producto &amp; Categoría</th>
+                                <th>Stock (Kg)</th>
+                                <th>Costo / Valor Total</th>
+                                <th>Ubicación</th>
+                                <th>Estado</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr v-for="lote in lotes" :key="lote.id">
+                                <td><strong>{{ lote.codigo_lote }}</strong></td>
+                                <td>
+                                    <div style="font-weight:600;">{{ lote.nombre_producto }}</div>
+                                    <div style="font-size:11px;color:var(--muted);">{{ lote.categoria_nombre }}</div>
+                                </td>
+                                <td>
+                                    <strong>{{ formatNumber(lote.cantidad_kg) }} kg</strong>
+                                    <span v-if="lote.alerta_stock_bajo" class="stock-warning">⚠️ Bajo stock mín.</span>
+                                </td>
+                                <td>
+                                    <div>${{ formatNumber(lote.costo_unitario_usd) }} /kg</div>
+                                    <div style="font-size:11.5px;font-weight:700;color:var(--navy);">Total: ${{ formatNumber(lote.valor_total_usd) }}</div>
+                                </td>
+                                <td>{{ lote.ubicacion_bodega }}</td>
+                                <td>
+                                    <span class="badge" :class="'badge-' + lote.estado">{{ lote.estado }}</span>
+                                </td>
+                                <td>
+                                    <div style="display:flex;gap:6px;">
+                                        <button class="btn btn-sm btn-outline" @click="seleccionarParaEditar(lote)">Editar</button>
+                                        <button class="btn btn-sm btn-danger" @click="eliminarLote(lote)">Eliminar</button>
+                                    </div>
+                                </td>
+                            </tr>
+                            <tr v-if="lotes.length === 0">
+                                <td colspan="7" style="text-align:center;padding:24px;color:var(--muted);">
+                                    No se encontraron lotes con los filtros seleccionados.
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+const { createApp } = Vue;
+
+createApp({
+    data() {
+        return {
+            categorias: [],
+            lotes: [],
+            kpis: {
+                total_lotes: 0,
+                total_kg: 0,
+                valor_inventario_usd: 0,
+                alertas_stock_bajo: 0
+            },
+            filtros: {
+                q: '',
+                categoria_id: '',
+                estado: ''
+            },
+            editandoId: null,
+            form: {
+                codigo_lote: '',
+                nombre_producto: '',
+                categoria_id: '',
+                cantidad_kg: 100,
+                stock_minimo_kg: 50,
+                costo_unitario_usd: 5.00,
+                estado: 'DISPONIBLE',
+                ubicacion_bodega: 'Cámara Frigorífica A1'
+            },
+            usuarioAutenticado: false,
+            usuarioActual: '',
+            mensajeAlerta: '',
+            tipoAlerta: 'success'
+        };
+    },
+    mounted() {
+        this.cargarCategorias();
+        this.cargarLotes();
+    },
+    methods: {
+        formatNumber(val) {
+            return Number(val || 0).toLocaleString('es-EC', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        },
+        mostrarMensaje(texto, tipo = 'success') {
+            this.mensajeAlerta = texto;
+            this.tipoAlerta = tipo;
+            setTimeout(() => { this.mensajeAlerta = ''; }, 4000);
+        },
+        async cargarCategorias() {
+            const res = await fetch('/api/categorias/');
+            const data = await res.json();
+            if (data.ok) {
+                this.categorias = data.categorias;
+                if (!this.form.categoria_id && this.categorias.length > 0) {
+                    this.form.categoria_id = this.categorias[0].id;
+                }
+            }
+        },
+        async cargarLotes() {
+            const params = new URLSearchParams(this.filtros).toString();
+            const res = await fetch(`/api/lotes/?${params}`);
+            const data = await res.json();
+            if (data.ok) {
+                this.lotes = data.lotes;
+                this.kpis = data.kpis;
+            }
+        },
+        async guardarLote() {
+            const url = this.editandoId ? `/api/lotes/${this.editandoId}/` : '/api/lotes/';
+            const method = this.editandoId ? 'PUT' : 'POST';
+
+            const res = await fetch(url, {
+                method,
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(this.form)
+            });
+            const data = await res.json();
+
+            if (data.ok) {
+                this.mostrarMensaje(data.mensaje, 'success');
+                this.limpiarFormulario();
+                this.cargarLotes();
+            } else {
+                this.mostrarMensaje(data.error || 'Error al procesar la solicitud', 'error');
+            }
+        },
+        seleccionarParaEditar(lote) {
+            this.editandoId = lote.id;
+            this.form = {
+                codigo_lote: lote.codigo_lote,
+                nombre_producto: lote.nombre_producto,
+                categoria_id: lote.categoria_id,
+                cantidad_kg: lote.cantidad_kg,
+                stock_minimo_kg: lote.stock_minimo_kg,
+                costo_unitario_usd: lote.costo_unitario_usd,
+                estado: lote.estado,
+                ubicacion_bodega: lote.ubicacion_bodega
+            };
+        },
+        async eliminarLote(lote) {
+            if (!confirm(`¿Deseas eliminar el lote ${lote.codigo_lote}?`)) return;
+            const res = await fetch(`/api/lotes/${lote.id}/`, { method: 'DELETE' });
+            const data = await res.json();
+            if (data.ok) {
+                this.mostrarMensaje(data.mensaje, 'success');
+                this.cargarLotes();
+            }
+        },
+        limpiarFormulario() {
+            this.editandoId = null;
+            this.form = {
+                codigo_lote: '',
+                nombre_producto: '',
+                categoria_id: this.categorias.length ? this.categorias[0].id : '',
+                cantidad_kg: 100,
+                stock_minimo_kg: 50,
+                costo_unitario_usd: 5.00,
+                estado: 'DISPONIBLE',
+                ubicacion_bodega: 'Cámara Frigorífica A1'
+            };
+        },
+        async loginDemo() {
+            const res = await fetch('/api/auth/login/', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username: 'admin', password: 'nexstock2026' })
+            });
+            const data = await res.json();
+            if (data.ok) {
+                this.usuarioAutenticado = true;
+                this.usuarioActual = data.usuario.username;
+                this.mostrarMensaje(data.mensaje, 'success');
+            }
+        },
+        async cerrarSesion() {
+            await fetch('/api/auth/logout/', { method: 'POST' });
+            this.usuarioAutenticado = false;
+            this.usuarioActual = '';
+        }
+    }
+}).mount('#app');
+</script>
+{% endverbatim %}
+</body>
+</html>
